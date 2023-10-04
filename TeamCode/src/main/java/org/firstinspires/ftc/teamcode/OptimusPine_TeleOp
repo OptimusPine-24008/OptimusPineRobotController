@@ -1,0 +1,69 @@
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.util.Range;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
+
+@TeleOp(name="OptimusPine_TeleOp", group="Linear OpMode")
+
+public class OptimusPine_TeleOp extends LinearOpMode {
+    private DcMotor leftMotor;
+    private DcMotor rightMotor;
+    private DcMotor armMotor;
+    private Servo leftClaw;
+    private Servo rightClaw;
+
+    private boolean clawOpen = true; // Initial state of the claw
+
+    @Override
+    public void runOpMode() {
+        // Initialize motors
+        leftMotor = hardwareMap.get(DcMotor.class, "left_motor");
+        rightMotor = hardwareMap.get(DcMotor.class, "right_motor");
+        armMotor = hardwareMap.get(DcMotor.class, "arm_motor");
+        
+        // Initialize servos
+        leftClaw = hardwareMap.get(Servo.class, "left_claw");
+        rightClaw = hardwareMap.get(Servo.class, "right_claw");
+
+        // Reverse the right motor so that both motors move in the same direction
+        rightMotor.setDirection(DcMotor.Direction.REVERSE);
+
+        waitForStart();
+
+        double leftPower;
+        double rightPower;
+
+        while (opModeIsActive()) {
+            // Read joystick values
+            double drive = -gamepad2.left_stick_y;
+            double turn = gamepad2.left_stick_x;
+            double armPower = gamepad2.right_stick_y;
+
+            // Limit the range of values using Range.clip
+            leftPower = Range.clip(drive + turn, -1.0, 1.0);
+            rightPower = Range.clip(drive - turn, -1.0, 1.0);
+            armPower = Range.clip(armPower, -0.5, 0.25);
+
+            // Set motor powers
+            leftMotor.setPower(leftPower);
+            rightMotor.setPower(rightPower);
+            armMotor.setPower(armPower);
+
+            // Toggle the claw open/close when the A button is pressed
+            if (gamepad2.a) {
+                if (clawOpen) {
+                    leftClaw.setPosition(0.75); // Set the left claw servo to a partially open position
+                    rightClaw.setPosition(1.0); // Set the right claw servo to closed position
+                } else {
+                    leftClaw.setPosition(1.0); // Set the left claw servo to fully open position
+                    rightClaw.setPosition(0.5); // Set the right claw servo to open position
+                }
+                clawOpen = !clawOpen; // Toggle the claw state
+                sleep(500); // Delay to prevent rapid toggling
+            }
+
+            idle();
+        }
+    }
+}
