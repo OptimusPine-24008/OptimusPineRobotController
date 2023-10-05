@@ -43,12 +43,20 @@ public class OptimusPine_TeleOp extends LinearOpMode {
             // Limit the range of values using Range.clip
             leftPower = Range.clip(drive + turn, -1.0, 1.0);
             rightPower = Range.clip(drive - turn, -1.0, 1.0);
-            armPower = Range.clip(armPower, -0.5, 0.25);
+
+            // Check if the right stick is not moved (in a neutral position)
+            if (Math.abs(armPower) > 0.05) {
+                // Reduce the arm motor's speed by multiplying with a scaling factor
+                armPower = 0.3 * Range.clip(armPower, -1.0, 1.0); // Adjust the scaling factor as needed
+                armMotor.setPower(armPower);
+            } else {
+                // Stop the arm motor when the stick is released
+                armMotor.setPower(0.0);
+            }
 
             // Set motor powers
             leftMotor.setPower(leftPower);
             rightMotor.setPower(rightPower);
-            armMotor.setPower(armPower);
 
             // Toggle the claw open/close when the A button is pressed
             if (gamepad2.a) {
