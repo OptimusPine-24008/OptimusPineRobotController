@@ -14,6 +14,7 @@ public class OptimusPine_TeleOp extends LinearOpMode {
     private Servo rightClaw;
 
     private boolean clawOpen = true; // Initial state of the claw
+    private boolean armModeHold = false; // Flag to indicate whether the arm motor is in hold mode
 
     @Override
     public void runOpMode() {
@@ -28,6 +29,13 @@ public class OptimusPine_TeleOp extends LinearOpMode {
 
         // Reverse the right motor so that both motors move in the same direction
         rightMotor.setDirection(DcMotor.Direction.REVERSE);
+
+        // Reverse the left claw servo direction
+        leftClaw.setDirection(Servo.Direction.REVERSE);
+
+        // Reset the arm motor encoder
+        armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        armMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
         waitForStart();
 
@@ -46,12 +54,18 @@ public class OptimusPine_TeleOp extends LinearOpMode {
 
             // Check if the right stick is not moved (in a neutral position)
             if (Math.abs(armPower) > 0.05) {
-                // Reduce the arm motor's speed by multiplying with a scaling factor
-                armPower = 0.3 * Range.clip(armPower, -1.0, 1.0); // Adjust the scaling factor as needed
-                armMotor.setPower(armPower);
+                // Set the arm motor's power
+                armMotor.setPower(0.3 * Range.clip(armPower, -1.0, 1.0)); // Adjust the scaling factor as needed
+                armModeHold = false; // Arm motor is not in hold mode
             } else {
-                // Stop the arm motor when the stick is released
-                armMotor.setPower(0.0);
+                // Stop the arm motor and put it in hold mode
+                if (!armModeHold) {
+                    armMotor.setPower(0.0);
+                    armMotor.setTargetPosition(armMotor.getCurrentPosition()); // Hold current position
+                    armMotor.setPower(0.1); // Set a small power to hold position
+                    armMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION); // Put motor in hold mode
+                    armModeHold = true; // Arm motor is in hold mode
+                }
             }
 
             // Set motor powers
@@ -61,11 +75,11 @@ public class OptimusPine_TeleOp extends LinearOpMode {
             // Toggle the claw open/close when the A button is pressed
             if (gamepad2.a) {
                 if (clawOpen) {
-                    leftClaw.setPosition(0.75); // Set the left claw servo to a partially open position
-                    rightClaw.setPosition(1.0); // Set the right claw servo to closed position
+                    leftClaw.setPosition(Range.clip(0.5, 0.0, 1.0)); // Use the original value for the left claw
+                    rightClaw.setPosition(Range.clip(0.75, 0.0, 1.0)); // Adjust this value to close the right claw less
                 } else {
-                    leftClaw.setPosition(1.0); // Set the left claw servo to fully open position
-                    rightClaw.setPosition(0.5); // Set the right claw servo to open position
+                    leftClaw.setPosition(Range.clip(0.0, 0.0, 1.0)); // Use the original value for the left claw
+                    rightClaw.setPosition(Range.clip(0.5, 0.0, 1.0)); // Adjust this value to open the right claw less
                 }
                 clawOpen = !clawOpen; // Toggle the claw state
                 sleep(500); // Delay to prevent rapid toggling
